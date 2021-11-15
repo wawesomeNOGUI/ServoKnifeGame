@@ -10,18 +10,18 @@ import (
 var input string
 var exit bool = false
 var startStop bool = false
-var speed time.Duration = 1  //divide time by speed to speed up servo moverments
+var speed time.Duration = 1  //subtract time by speed to speed up servo movements
 var count int
 
 //Positions will be indexed [left/right][up/down]
 //index 0 will be starting position
 var servoPositions [][]uint32 = [][]uint32{
-  []uint32{2400, 2400}, //all the way right and up
-  []uint32{2200, 1800}, //thumb
-  []uint32{2000, 1800}, //first finger
-  []uint32{1800, 1800}, //second
-  []uint32{1600, 1800}, //third
-  []uint32{1400, 1800}, //fourth
+  []uint32{2400, 2400}, //all the way left and up
+  []uint32{2200, 2100}, //thumb
+  []uint32{1800, 2100}, //first finger
+  []uint32{1600, 2100}, //second
+  []uint32{1500, 2100}, //third
+  []uint32{1350, 2100}, //outside pinky
 }
 
 func checkUserInput(){
@@ -40,7 +40,8 @@ func checkUserInput(){
       if input[:6] == "speed=" {
         num, err := strconv.Atoi(input[6:]) //everything after "="
         if err == nil {
-          speed = time.Duration(num)
+          speed = time.Duration(num) * time.Millisecond
+          fmt.Println("Speed set to: ", speed)
         }else{
           fmt.Println("Invalid Speed")
         }
@@ -72,8 +73,8 @@ func main() {
 
   //PWM for servo control
   //Pin Numbers are GPIO numbers
-  servoLR := rpio.Pin(18)  //servo Left Right rotation physical pin 12
-  servoUD := rpio.Pin(19)  //servo Up Down rotation physical pin 35
+  servoLR := rpio.Pin(19)  //servo Left Right rotation physical pin 35
+  servoUD := rpio.Pin(18)  //servo Up Down rotation physical pin 12
 
   servoLR.Mode(rpio.Pwm)
   servoUD.Mode(rpio.Pwm)
@@ -95,14 +96,16 @@ func main() {
   for !exit {
     if startStop {
       //Do the servo knife game
-      time.Sleep(time.Millisecond * 250 / speed)
+      time.Sleep(time.Millisecond * 250 - speed)
 
       servoLR.DutyCycle(servoPositions[count][0], 24000)
+      time.Sleep(time.Millisecond * 10)
       servoUD.DutyCycle(servoPositions[count][1], 24000)
 
-      time.Sleep(time.Millisecond * 250 / speed)
+      time.Sleep(time.Millisecond * 250 - speed)
       //go back to start position
       servoUD.DutyCycle(servoPositions[0][1], 24000)
+      time.Sleep(time.Millisecond * 10)
       servoLR.DutyCycle(servoPositions[0][0], 24000)
 
       count++
